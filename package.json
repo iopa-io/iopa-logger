@@ -1,7 +1,7 @@
 {
-  "name": "iopa-common-middleware",
+  "name": "iopa-logger",
   "main": "index.js",
-  "description": "iopa-common-middleware is a core set of iopa middleware for building self-hosted servers",
+  "description": "iopa-logger is an IOPA middleware for tracing messages ",
   "author": "iopa <build@iopa.io>",
   "license": "Apache-2.0",
   "maintainers": [
@@ -13,7 +13,7 @@
   "version": "1.2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iopa-io/iopa-common-middleware.git"
+    "url": "https://github.com/iopa-io/iopa-logger.git"
   },
   "dependencies": {
     "iopa": "^1.2.0",
