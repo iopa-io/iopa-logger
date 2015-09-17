@@ -75,7 +75,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
  * @method connect
  * @this context IOPA context dictionary
  */
-MessageLogger.connect = function MessageLogger_connect(context) {
+MessageLogger.prototype.connect = function MessageLogger_connect(context) {
          
     // HOOK INTO CLIENT FETCHES
     if (context[SERVER.Fetch]) 

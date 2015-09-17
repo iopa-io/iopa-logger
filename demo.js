@@ -36,7 +36,7 @@ app.use(function (context, next) {
 });
 
 var server = stubServer.createServer(app.build())
-server.connectuse(iopaMessageLogger.connect);
+server.connectuse(iopaMessageLogger);
 
 server.receive("TEST");
 server.connect("urn://localhost").then(function(client){
