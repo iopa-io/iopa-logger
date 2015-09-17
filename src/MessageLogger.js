@@ -52,7 +52,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
     // HOOK INTO TO CHANNEL CONTEXT
     if (context[SERVER.ParentContext] 
     && !context[SERVER.ParentContext][SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY][MESSAGE_LOGGER.HOOKED])
-       MessageLogger(context[SERVER.ParentContext], false); 
+       this.invoke.call(this, context[SERVER.ParentContext], false); 
     
     context[SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY][MESSAGE_LOGGER.HOOKED]=true;
       
