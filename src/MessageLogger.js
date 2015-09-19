@@ -47,61 +47,45 @@ function MessageLogger(app) {
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
+MessageLogger.prototype.channel = function MessageLogger_channel(context, next) {
+   
+  // context.log.info("[IOPA] REQUEST IN " + _requestLog(context));
+        return next();
+};
+
+/**
+ * @method invoke
+ * @param context IOPA context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
 MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
-    
-    // HOOK INTO TO CHANNEL CONTEXT
-    if (context[SERVER.ParentContext] 
-    && !context[SERVER.ParentContext][SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY][MESSAGE_LOGGER.HOOKED])
-       this.invoke.call(this, context[SERVER.ParentContext], false); 
-    
-    context[SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY][MESSAGE_LOGGER.HOOKED]=true;
-      
-    // HOOK INTO CLIENT FETCHES
-    if (context[SERVER.Fetch]) 
-       context[SERVER.Fetch] = _fetch.bind(this, context, context[SERVER.Fetch]);
-      
-     if (next)
-    {
-        // NOT CALLED FROM CHILD CONTEXT INVOKE
-         
-        // HOOK INTO RESPONSE STREAM
         context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
         context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
         return next();
-    }
+   
 };
+
+/**
+ * @method invoke
+ * @param context IOPA context dictionary
+ * @param next   IOPA application delegate for the remainder of the pipeline
+ */
+MessageLogger.prototype.connect = function MessageLogger_connect(context, next) {
+     context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
+   
+        return next();
+ 
+};
+
 
 /**
  * @method connect
  * @this context IOPA context dictionary
  */
-MessageLogger.prototype.connect = function MessageLogger_connect(context) {
-         
-    // HOOK INTO CLIENT FETCHES
-    if (context[SERVER.Fetch]) 
-       context[SERVER.Fetch] = _fetch.bind(this, context, context[SERVER.Fetch]);
-    
-    context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
-    
-};
-
-/**
- * Context Func(tion) to create a new IOPA Request using a Tcp Url including host and port name
- *
- * @method fetch
-
- * @parm  path url representation of ://127.0.0.1/hello
- * @param options object dictionary to override defaults
- * @param pipeline function(context):Promise  to call with context record
- * @returns Promise<context>
- * @public
- */
-function _fetch(channelContext, nextFetch, path, options, pipeline) {
-    return nextFetch(path, options, function (childContext) {
-           childContext[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, childContext, childContext[SERVER.RawStream]));
-          return pipeline(childContext);
-    });
-};
+MessageLogger.prototype.dispatch = function MessageLogger_dispatch(context, next) {
+            context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, context, context[SERVER.RawStream]));
+        return next();
+}
 
 /**
  * @method _invokeOnParentResponse

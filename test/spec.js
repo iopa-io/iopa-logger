@@ -49,8 +49,7 @@ describe('#MessageLogger()', function () {
         });
 
         var server = stubServer.createServer(app.build())
-        server.connectuse(iopaMessageLogger);
-
+    
         server.receive("TEST");
          process.nextTick(function(){
                 count.should.equal(2);
@@ -71,8 +70,7 @@ describe('#MessageLogger()', function () {
         });
 
         var server = stubServer.createServer(app.build())
-        server.connectuse(iopaMessageLogger);
-
+      
          server.connect("urn://localhost").then(function (client) {
             return client.fetch("/projector", "GET", function (context) {
                 context["server.RawStream"].end("HELLO WORLD " + seq++);
