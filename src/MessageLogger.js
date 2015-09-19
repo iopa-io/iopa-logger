@@ -47,10 +47,9 @@ function MessageLogger(app) {
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MessageLogger.prototype.channel = function MessageLogger_channel(context, next) {
-   
-  // context.log.info("[IOPA] REQUEST IN " + _requestLog(context));
-        return next();
+MessageLogger.prototype.channel = function MessageLogger_channel(channelContext, next) {
+     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, channelContext));  
+     return next();
 };
 
 /**
@@ -72,8 +71,7 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
  */
 MessageLogger.prototype.connect = function MessageLogger_connect(context, next) {
      context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
-   
-        return next();
+     return next();
  
 };
 
@@ -83,8 +81,8 @@ MessageLogger.prototype.connect = function MessageLogger_connect(context, next) 
  * @this context IOPA context dictionary
  */
 MessageLogger.prototype.dispatch = function MessageLogger_dispatch(context, next) {
-            context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, context, context[SERVER.RawStream]));
-        return next();
+       context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, context, context[SERVER.RawStream]));
+      return next();
 }
 
 /**
@@ -112,7 +110,8 @@ function _invokeOnParentResponse(parentContext, response) {
  * @private
 */
 function _writeResponse(context, nextStream, chunk, encoding, callback) {
-      nextStream.write(chunk, encoding, callback);
+       context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
+       nextStream.write(chunk, encoding, callback);
        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
 };
 
@@ -126,6 +125,7 @@ function _writeResponse(context, nextStream, chunk, encoding, callback) {
  * @private
 */
 function _writeRequest(context, nextStream, chunk, encoding, callback) {
+    
     nextStream.write(chunk, encoding, callback);
       context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
 };
