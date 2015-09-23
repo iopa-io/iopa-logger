@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+global.Promise = require('bluebird');
 
 const iopa = require('iopa'),
      iopaStream = require('iopa-common-stream'),
@@ -36,11 +36,10 @@ app.use(function (context, next) {
 });
 
 var server = stubServer.createServer(app.build())
-server.connectuse(iopaMessageLogger);
 
 server.receive("TEST");
 server.connect("urn://localhost").then(function(client){
-    return client.fetch("/projector", "GET", function(context){
+    return client[SERVER.Fetch]("/projector", "GET", function(context){
           context[SERVER.RawStream].end("HELLO WORLD " + seq++);
        });
 })

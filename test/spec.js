@@ -41,8 +41,10 @@ describe('#MessageLogger()', function () {
 
         var app = new iopa.App({"server.Logger": log});
 
-        app.use(iopaMessageLogger);
-
+        app.invokeuse(iopaMessageLogger);
+        app.connectuse(iopaMessageLogger);
+        app.dispatchuse(iopaMessageLogger);
+ 
        app.use(function (context, next) {
             context.response["server.RawStream"].end("HELLO WORLD " + seq++);
             return next();
@@ -72,7 +74,7 @@ describe('#MessageLogger()', function () {
         var server = stubServer.createServer(app.build())
       
          server.connect("urn://localhost").then(function (client) {
-            return client.fetch("/projector", "GET", function (context) {
+            return client["server.Fetch"]("/projector", "GET", function (context) {
                 context["server.RawStream"].end("HELLO WORLD " + seq++);
             });
         }).then(function(){
