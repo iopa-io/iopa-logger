@@ -134,7 +134,7 @@ function _url(context) {
         + "//" + context[SERVER.RemoteAddress]
         + ":" + context[SERVER.RemotePort]
         + context[IOPA.Path]
-        + (context[IOPA.QueryString] ? + context[IOPA.QueryString] : "");
+        + (context[IOPA.QueryString] ? "?" + context[IOPA.QueryString] : "");
 }
 
 
