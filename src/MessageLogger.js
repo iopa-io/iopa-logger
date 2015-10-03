@@ -139,14 +139,14 @@ function _url(context) {
 
 
 function _requestLog(context) {
-    return context[IOPA.Method] + " " + context[IOPA.MessageId] + ":" + context[IOPA.Seq] + " "
+    return context[IOPA.Method] + " " + (context[IOPA.MessageId] || "") + ":" + context[IOPA.Seq] + " "
         + _url(context)
        + "  " + ((context[IOPA.Body] !== null) ? context[IOPA.Body].toString() : "");
 }
 
 function _responseLog(response, chunk) {
 
-    return response[IOPA.Method] + " " + response[IOPA.MessageId] + ":" + response[IOPA.Seq] + " "
+    return (response[IOPA.Method] || response[IOPA.Protocool]) + " " + (response[IOPA.MessageId] || "") + ":" + response[IOPA.Seq] + " "
         + response[IOPA.StatusCode] + "/"
         + response[IOPA.ReasonPhrase]
         + " [" + response[SERVER.RemoteAddress]
