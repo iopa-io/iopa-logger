@@ -146,7 +146,7 @@ function _requestLog(context) {
 
 function _responseLog(response, chunk) {
 
-    return (response[IOPA.Method] || response[IOPA.Protocool]) + " " + (response[IOPA.MessageId] || "") + ":" + response[IOPA.Seq] + " "
+    return (response[IOPA.Method] || response[IOPA.Protocol]) + " " + (response[IOPA.MessageId] || "") + ":" + response[IOPA.Seq] + " "
         + response[IOPA.StatusCode] + "/"
         + response[IOPA.ReasonPhrase]
         + " [" + response[SERVER.RemoteAddress]
