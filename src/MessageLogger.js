@@ -74,14 +74,17 @@ MessageLogger.prototype.connect = function MessageLogger_connect(context, next) 
  
 };
 
-
 /**
  * @method connect
  * @this context IOPA context dictionary
  */
 MessageLogger.prototype.dispatch = function MessageLogger_dispatch(context, next) {
-       context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_write.bind(this, context, context[SERVER.RawStream]));
-      return next();
+    if (context[SERVER.IsRequest])
+       context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
+    else
+       context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
+    
+    return next();
 }
 
 /**
@@ -92,30 +95,7 @@ MessageLogger.prototype.dispatch = function MessageLogger_dispatch(context, next
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 function _invokeOnParentResponse(parentContext, response) {
-   response.log.info("[IOPA] RESPONSE IN " + _responseLog(response))
-    
-       // HOOK INTO RESPONSE STREAM
-   response.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_write.bind(this, response.response, response.response[SERVER.RawStream]));
-   
-};
-
-/**
- * @method _write
- * @param context IOPA context dictionary
- * @param nextStream Stream The raw stream saved that is next in chain for writing
- * @param chunk     String | Buffer The data to write
- * @param encoding String The encoding, if chunk is a String
- * @param callback Function Callback for when this chunk of data is flushed
- * @private
-*/
-function _write(context, nextStream, chunk, encoding, callback) {
-    
-    nextStream.write(chunk, encoding, callback);
-    
-    if (context[SERVER.IsRequest])
-       context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
-    else
-       context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
+   response.log.info("[IOPA] RESPONSE IN " + _responseLog(response))   
 };
 
 function _url(context) {
@@ -130,7 +110,6 @@ function _url(context) {
 function _requestLog(context) {
     return context[IOPA.Method] + " " + (context[IOPA.MessageId] || "") + ":" + context[IOPA.Seq] + " "
         + _url(context)
-       + "  " + ((context[IOPA.Body] !== null) ? context[IOPA.Body].toString() : "");
 }
 
 function _responseLog(response, chunk) {
@@ -140,7 +119,6 @@ function _responseLog(response, chunk) {
         + response[IOPA.ReasonPhrase]
         + " [" + response[SERVER.RemoteAddress]
         + ":" + response[SERVER.RemotePort] + "]" + "  "
-        + ((response[IOPA.Body] !== null) ? response[IOPA.Body].toString() : "");
 }
 
 module.exports = MessageLogger;
