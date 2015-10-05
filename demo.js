@@ -39,7 +39,7 @@ var server = stubServer.createServer(app.build())
 
 server.receive("TEST");
 server.connect("urn://localhost").then(function(client){
-    return client[SERVER.Fetch]("/projector", "GET", function(context){
+    return client[SERVER.Fetch]("/projector", "GET", null, function(context){
           context[SERVER.RawStream].end("HELLO WORLD " + seq++);
        });
 })

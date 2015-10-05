@@ -58,7 +58,6 @@ MessageLogger.prototype.channel = function MessageLogger_channel(channelContext,
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
-        context.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, context.response, context.response[SERVER.RawStream]));
         context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
         return next();
    
@@ -81,7 +80,7 @@ MessageLogger.prototype.connect = function MessageLogger_connect(context, next) 
  * @this context IOPA context dictionary
  */
 MessageLogger.prototype.dispatch = function MessageLogger_dispatch(context, next) {
-       context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeRequest.bind(this, context, context[SERVER.RawStream]));
+       context[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_write.bind(this, context, context[SERVER.RawStream]));
       return next();
 }
 
@@ -96,7 +95,7 @@ function _invokeOnParentResponse(parentContext, response) {
    response.log.info("[IOPA] RESPONSE IN " + _responseLog(response))
     
        // HOOK INTO RESPONSE STREAM
-   response.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_writeResponse.bind(this, response.response, response.response[SERVER.RawStream]));
+   response.response[SERVER.RawStream] = new iopaStream.OutgoingStreamTransform(_write.bind(this, response.response, response.response[SERVER.RawStream]));
    
 };
 
@@ -109,24 +108,14 @@ function _invokeOnParentResponse(parentContext, response) {
  * @param callback Function Callback for when this chunk of data is flushed
  * @private
 */
-function _writeResponse(context, nextStream, chunk, encoding, callback) {
-       nextStream.write(chunk, encoding, callback);
-       context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
-};
-
-/**
- * @method _write
- * @param context IOPA context dictionary
- * @param nextStream Stream The raw stream saved that is next in chain for writing
- * @param chunk     String | Buffer The data to write
- * @param encoding String The encoding, if chunk is a String
- * @param callback Function Callback for when this chunk of data is flushed
- * @private
-*/
-function _writeRequest(context, nextStream, chunk, encoding, callback) {
+function _write(context, nextStream, chunk, encoding, callback) {
     
     nextStream.write(chunk, encoding, callback);
-      context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
+    
+    if (context[SERVER.IsRequest])
+       context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
+    else
+       context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
 };
 
 function _url(context) {

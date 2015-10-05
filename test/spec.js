@@ -74,7 +74,7 @@ describe('#MessageLogger()', function () {
         var server = stubServer.createServer(app.build())
       
          server.connect("urn://localhost").then(function (client) {
-            return client["server.Fetch"]("/projector", "GET", function (context) {
+            return client["server.Fetch"]("/projector", "GET", null, function (context) {
                 context["server.RawStream"].end("HELLO WORLD " + seq++);
             });
         }).then(function(){
