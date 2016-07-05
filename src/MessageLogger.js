@@ -70,7 +70,7 @@ MessageLogger.prototype.create = function MessageLogger_create(parentContext, ne
     process.nextTick(function () {
         context["iopa.Body"].on("finish", self._send.bind(self, context));
     });
-   context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnResponse.bind(this, context));
+  // context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnResponse.bind(this, context));
 
     return context;
 };
