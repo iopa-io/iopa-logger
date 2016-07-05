@@ -16,18 +16,18 @@
 
 const util = require('util'),
     iopaStream = require('iopa-common-stream');
-    
+
 const constants = require('iopa').constants,
     IOPA = constants.IOPA,
     SERVER = constants.SERVER
-  
-     
+
+
 const MESSAGE_LOGGER = {
-     CAPABILITY: "urn:io.iopa:MessageLogger",
-     HOOKED: "messageLogger.Hooked"
-     }
- 
- const packageVersion = require('../package.json').version;
+    CAPABILITY: "urn:io.iopa:MessageLogger",
+    HOOKED: "messageLogger.Hooked"
+}
+
+const packageVersion = require('../package.json').version;
 
 /**
  * IOPA Middleware 
@@ -38,18 +38,41 @@ const MESSAGE_LOGGER = {
  * @public
  */
 function MessageLogger(app) {
-     app.properties[SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY] = {};
-     app.properties[SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY][SERVER.Version] = packageVersion;
+    app.properties[SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY] = {};
+    app.properties[SERVER.Capabilities][MESSAGE_LOGGER.CAPABILITY][SERVER.Version] = packageVersion;
 }
 
 /**
  * @method invoke
- * @param context IOPA context dictionary
+ * @this channelContext IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MessageLogger.prototype.channel = function MessageLogger_channel(channelContext, next) {
-     channelContext[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, channelContext));  
-     return next();
+MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
+    context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
+    return next();
+};
+
+/**
+ * Creates a new IOPA Context that is a child request/response of a parent Context
+ *
+ * @method createChildContext
+ *
+ * @param parentContext IOPA Context for parent
+ * @param next IOPA application delegate for the remainder of the createContext pipeline
+ * @param url string representation of /hello
+ * @param options object 
+ * @returns context
+ * @public
+ */
+MessageLogger.prototype.create = function MessageLogger_create(parentContext, next, url, options) {
+    var context = next(url, options);
+    var self = this;
+    process.nextTick(function () {
+        context["iopa.Body"].on("finish", self._send.bind(self, context));
+    });
+   context[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnResponse.bind(this, context));
+
+    return context;
 };
 
 /**
@@ -58,9 +81,9 @@ MessageLogger.prototype.channel = function MessageLogger_channel(channelContext,
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
 MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
-        context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
-        return next();
-   
+    context.log.info("[IOPA] REQUEST IN " + _requestLog(context))
+        context.response["iopa.Body"].on("start", this._send.bind(this, context.response));
+    return next();
 };
 
 /**
@@ -68,35 +91,37 @@ MessageLogger.prototype.invoke = function MessageLogger_invoke(context, next) {
  * @param context IOPA context dictionary
  * @param next   IOPA application delegate for the remainder of the pipeline
  */
-MessageLogger.prototype.connect = function MessageLogger_connect(context, next) {
-     context[IOPA.Events].on(IOPA.EVENTS.Response, _invokeOnParentResponse.bind(this, context));
-     return next();
- 
-};
-
-/**
- * @method connect
- * @this context IOPA context dictionary
- */
-MessageLogger.prototype.dispatch = function MessageLogger_dispatch(context, next) {
-    if (context[SERVER.IsRequest])
-       context.log.info("[IOPA] REQUEST OUT " + _requestLog(context));
-    else
-       context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context));
-    
+MessageLogger.prototype.dispatch = function MessageLogger_connect(channelContext, next) {
+    channelContext.create = this.create.bind(this, channelContext, channelContext.create);
+    channelContext[IOPA.Events].on(IOPA.EVENTS.Response, this._invokeOnResponse.bind(this, channelContext));
     return next();
-}
+};
+
 
 /**
- * @method _invokeOnParentResponse
- * @this CacheMatch
- * @param channelContext IOPA parent context dictionary
- * @param context IOPA childResponse context dictionary
- * @param next   IOPA application delegate for the remainder of the pipeline
+ * @method send
+ * @this context IOPA context dictionary
+ * @param buf   optional data to write
  */
-function _invokeOnParentResponse(parentContext, response) {
-   response.log.info("[IOPA] RESPONSE IN " + _responseLog(response))   
+MessageLogger.prototype._send = function MessageLogger_send(context, next, body) {
+    if (context[SERVER.IsRequest])
+        context.log.info("[IOPA] REQUEST OUT " + _requestLog(context))
+    else
+        context.log.info("[IOPA] RESPONSE OUT " + _responseLog(context))
 };
+
+/**
+ * Event handler for when a response is received from an outgoing client request on a parent channel
+ * This handler finds the matched outgoing child context and transfers the event to the child
+ * 
+ * @method _invokeOnParentResponse
+ * @param parentContext IOPA Context for parent
+ * @param response IOPA resonse context dictionary for this event
+ */
+MessageLogger.prototype._invokeOnResponse = function GenericMiddleware_invokeOnResponse(parentContext, response) {
+    response.log.info("[IOPA] RESPONSE IN " + _responseLog(response))
+};
+
 
 function _url(context) {
     return context[IOPA.Scheme]
@@ -122,3 +147,5 @@ function _responseLog(response, chunk) {
 }
 
 module.exports = MessageLogger;
+
+

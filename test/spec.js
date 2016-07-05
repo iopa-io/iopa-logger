@@ -14,76 +14,84 @@
  * limitations under the License.
  */
 
+const iopa = require('iopa');
+require('iopa-rest');
+
 const iopaMiddleware = require('../index.js'),
     iopaMessageLogger = require('../index.js').MessageLogger,
     stubServer = require('iopa-test').stubServer
 
 const should = require('should');
 
-const iopa = require('iopa');
 
 describe('#MessageLogger()', function () {
-    var count = 0, seq=0;
+    var count = 0, seq = 0;
     const log = {
-        info: function(data){
-            console.info( data);
-            count ++;
-             },
-        error: function(data){console.error(data); count = -100; },
-        warn: function(data){console.warn( data); count = -200; }
+        info: function (data) {
+            console.info(data);
+            count++;
+        },
+        error: function (data) { console.error(data); count = -100; },
+        warn: function (data) { console.warn(data); count = -200; }
     }
-   
+
     it('should have MessageLogger', function () {
         iopaMiddleware.should.have.property("MessageLogger");
     });
 
     it('should log outgoing messages', function (done) {
 
-        var app = new iopa.App({"server.Logger": log});
-
-        app.invokeuse(iopaMessageLogger);
-        app.connectuse(iopaMessageLogger);
-        app.dispatchuse(iopaMessageLogger);
- 
-       app.use(function (context, next) {
-            context.response["server.RawStream"].end("HELLO WORLD " + seq++);
-            return next();
-        });
-
-        var server = stubServer.createServer(app.build())
-    
-        server.receive("TEST");
-         process.nextTick(function(){
-                count.should.equal(2);
-                done();
-            });
-
-    })
-    
-     it('should log incoming messages', function (done) {
-
-        var app = new iopa.App({"server.Logger": log});
-
+        var app = new iopa.App({ "server.Logger": log });
+        app.use(stubServer);
+        app.use(stubServer.continue);
         app.use(iopaMessageLogger);
 
         app.use(function (context, next) {
-            context.response["server.RawStream"].end("HELLO WORLD " + seq++);
+            context.response[IOPA.Body].end("HELLO WORLD " + seq++);
             return next();
         });
 
-        var server = stubServer.createServer(app.build())
-      
-         server.connect("urn://localhost").then(function (client) {
-            return client["server.Fetch"]("/projector", "GET", null, function (context) {
-                context["server.RawStream"].end("HELLO WORLD " + seq++);
-            });
-        }).then(function(){
-            process.nextTick(function(){
-                count.should.equal(4);
-                done();
-            });
-        })
+        var server = app.createServer("stub:");
 
+        server.connect("urn://localhost").then(function (client) {
+            var context = client.create("/projector", "GET");
+            client["iopa.Events"].on("response", function (response) {
+                var responseBody = response["iopa.Body"].toString();
+                seq.should.equal(2);
+                done();
+            })
+
+            context["iopa.Body"].end("HELLO WORLD " + seq++);
+        });
+
+    })
+
+    it('should log incoming messages', function (done) {
+
+        var app = new iopa.App({ "server.Logger": log });
+       app.use(stubServer);
+        app.use(stubServer.continue);
+       
+        app.use(iopaMessageLogger);
+
+        app.use(function (context, next) {
+            context.response[IOPA.Body].end("HELLO WORLD " + seq++);
+            return next();
+        });
+
+        
+         var server = app.createServer("stub:");
+
+        server.connect("urn://localhost").then(function (client) {
+            var context = client.create("/projector", "GET");
+            client["iopa.Events"].on("response", function (response) {
+                var responseBody = response["iopa.Body"].toString();
+                seq.should.equal(4);
+                done();
+            })
+
+            context["iopa.Body"].end("HELLO WORLD " + seq++);
+        });
 
     })
 });

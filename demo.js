@@ -16,30 +16,33 @@
 global.Promise = require('bluebird');
 
 const iopa = require('iopa'),
-     iopaStream = require('iopa-common-stream'),
-     stubServer = require('iopa-test').stubServer
-   
-const  constants = iopa.constants,
+  iopaStream = require('iopa-common-stream'),
+  stubServer = require('iopa-test').stubServer
+
+const constants = iopa.constants,
   IOPA = constants.IOPA,
   SERVER = constants.SERVER
 
 const iopaMessageLogger = require('./index.js').MessageLogger
 
 var app = new iopa.App();
-
+app.use(stubServer);
+app.use(stubServer.continue);
 app.use(iopaMessageLogger);
 
 var seq = 0;
 app.use(function (context, next) {
-  context.response[SERVER.RawStream].end("HELLO WORLD " + seq++);
+  context.response[IOPA.Body].end("HELLO WORLD " + seq++);
   return next();
 });
 
-var server = stubServer.createServer(app.build())
+var server = app.createServer("stub:");
 
-server.receive("TEST");
-server.connect("urn://localhost").then(function(client){
-    return client[SERVER.Fetch]("/projector", "GET", null, function(context){
-          context[SERVER.RawStream].end("HELLO WORLD " + seq++);
-       });
-})
+server.connect("urn://localhost").then(function (client) {
+  var context = client.create("/projector", "GET");
+  client["iopa.Events"].on("response", function (response) {
+    var responseBody = response["iopa.Body"].toString();
+  })
+
+  context["iopa.Body"].end("HELLO WORLD " + seq++);
+});
